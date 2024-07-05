@@ -135,7 +135,7 @@ const Dashboard = () => {
                             )}
                         </TableBody>
                     </Table>
-                    <Modal backdrop="blur" isOpen={isOpen} onClose={onClose}>
+                    <Modal backdrop="blur" isOpen={isOpen} onClose={onClose} size="full" scrollBehavior="inside">
                         <ModalContent>
                             <ModalHeader className="flex flex-col gap-1">Debug Information</ModalHeader>
                             <ModalBody>
