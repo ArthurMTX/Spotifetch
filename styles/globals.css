@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-.gradient-bottom {
-    background: linear-gradient(to top, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+.truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 30rem;
 }

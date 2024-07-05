@@ -16,7 +16,7 @@ export function calculateStats(tracks: any[]): any {
         }
         labelCounter[track.label] = (labelCounter[track.label] || 0) + 1;
 
-        const genres = track.genres || [];
+        const genres = track.genres;
         for (const genre of genres) {
             genreCounter[genre] = (genreCounter[genre] || 0) + 1;
         }

@@ -10,6 +10,5 @@ export interface Track {
     album_name: string;
     is_local: boolean;
     label?: string;
-    album?: string;
     genres?: string[];
 }

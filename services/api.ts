@@ -30,15 +30,18 @@ export async function fetchTracksPage(url: string, headers: any, offset: number)
         let albumId = 'Unknown';
         let artistNames = 'Unknown';
         let artistIds = ['Unknown'];
+        let label = '';
 
         if (isLocal) {
             albumId = 'LOCAL_ARTIST';
             artistNames = 'LOCAL_ARTIST';
             artistIds = ['LOCAL_ARTIST'];
+            label = 'LOCAL_ARTIST';
         } else {
             albumId = album ? album.id : 'Unknown';
             artistNames = artists.map((artist: any) => artist.name).join(', ');
             artistIds = artists.map((artist: any) => artist.id);
+            label = album ? album.label || 'Unknown' : 'Unknown';
         }
 
         tracks.push({
@@ -48,6 +51,7 @@ export async function fetchTracksPage(url: string, headers: any, offset: number)
             duration: convertDuration(track.duration_ms || 0),
             duration_ms: track.duration_ms || 0,
             album_id: albumId,
+            label: label,
             artist_ids: artistIds,
             album_cover: album && album.images ? album.images[0].url : '',
             album_name: album ? album.name || 'Unknown' : 'Unknown',
@@ -84,8 +88,37 @@ export async function getAllTracks(playlistId: string, accessToken: string): Pro
         tracks.push(...result);
     }
 
+    const albumIdToLabel: Record<string, string> = {};
+    const albumIdToName: Record<string, string> = {};
+    const albumIds = [...new Set(tracks.map(track => track.album_id))];
+
+    for (let i = 0; i < albumIds.length; i += 20) {
+        const batchIds = albumIds.slice(i, i + 20);
+        const [labels, names] = await fetchAlbumLabels(batchIds, headers);
+        Object.assign(albumIdToLabel, labels);
+        Object.assign(albumIdToName, names);
+    }
+
+    const artistIdToGenres: Record<string, string[]> = {};
+    const artistIds = [...new Set(tracks.flatMap(track => track.artist_ids))];
+
+    for (let i = 0; i < artistIds.length; i += 50) {
+        const batchIds = artistIds.slice(i, i + 50);
+        const genres = await fetchArtistGenres(batchIds, headers);
+        Object.assign(artistIdToGenres, genres);
+    }
+
+    tracks.forEach(track => {
+        track.label = albumIdToLabel[track.album_id] || 'Unknown';
+        track.album_name = albumIdToName[track.album_id] || 'Unknown';
+        track.genres = track.artist_ids.flatMap(artistId => artistIdToGenres[artistId] || []);
+        delete track.album_id;
+        delete track.artist_ids;
+    });
+
     return tracks;
 }
+
 
 export async function fetchAlbumLabels(albumIds: string[], headers: any): Promise<[Record<string, string>, Record<string, string>]> {
     const validAlbumIds = albumIds.filter(albumId => albumId !== 'LOCAL_ARTIST');
@@ -143,7 +176,6 @@ export async function getPlaylistInfo(playlistId: string): Promise<any> {
         const playlistData = response.data;
         const tracks = await getAllTracks(playlistId, accessToken);
         const stats = calculateStats(tracks);
-
         const ownerImage = getOwnerImage(playlistData.owner);
 
         return {
